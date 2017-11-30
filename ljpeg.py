@@ -62,9 +62,12 @@ if __name__ == '__main__':
 
     W = None
     H = None
+    vendor = None
     # find the shape of image
     for l in open(ics, 'r'):
         l = l.strip().split(' ')
+        if l[0] == "DIGITIZER":
+            vendor = l[1]
         if len(l) < 7:
             continue
         if l[0] == name:
@@ -85,6 +88,23 @@ if __name__ == '__main__':
         image = image.reshape((H, W))
 
     raw = image
+
+    ## Apply equations depending on vendor.
+    print("Applying {} specific tranformations".format(vendor))
+    if vendor == "LUMISYS":
+        image = -(image - 4096.99) / 1009.01
+    elif vendor == "DBA":
+        image = -(numpy.log(image) - 4.80662) / 1.07553
+    elif vendor == "HOWTEK":
+        letter = path.split('/')[-1][0]
+        if letter == "A":
+            image = 3.789 - 0.00094568 * image
+        elif letter == "D":
+            image = 3.96604095240593 + (-0.00099055807612) * image
+        else:
+            logging.error("HOWTEK can only be couple to A or D, and not letter {}".format(letter))
+    else:
+        raise Exception("{} is not a valid vendor name".format(vendor))
 
     if args.visual:
         logging.warn("normalizing color, will lose information")
